@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top Student Finder</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #FAFAFA;
+      color: #1E1E1E;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 750px;
+      margin: 40px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0px 8px 20px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      text-align: center;
+      color: #1E1E1E;
+      font-size: 30px;
+      margin-bottom: 10px;
+    }
+
+    p.description {
+      text-align: center;
+      color: #5D6D7E;
+      font-size: 16px;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    /* Buttons */
+    button {
+      padding: 12px 22px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 10px 8px 0 0;
+      border: none;
+      border-radius: 10px;
+      transition: 0.3s;
+    }
+
+    .add-btn {
+      background-color: #6A5ACD;
+      color: white;
+    }
+    .add-btn:hover {
+      background-color: #5747c2;
+    }
+
+    .find-btn {
+      background-color: #D4A373;
+      color: #1E1E1E;
+      font-weight: bold;
+    }
+    .find-btn:hover {
+      background-color: #b98d5f;
+    }
+
+    .student-box {
+      background: #fdfdfd;
+      border: 1px solid #E0E0E0;
+      padding: 15px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      box-shadow: 0px 3px 6px rgba(0,0,0,0.05);
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 8px;
+      color: #1E1E1E;
+    }
+
+    input {
+      padding: 10px;
+      margin-top: 5px;
+      width: 95%;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: #6A5ACD;
+      box-shadow: 0 0 5px rgba(106, 90, 205, 0.4);
+    }
+
+    #result {
+      margin-top: 25px;
+      font-size: 18px;
+      padding: 15px;
+      border-radius: 10px;
+      background: #f4f4f9;
+      text-align: center;
+      color: #2980b9;
+      font-weight: bold;
+      box-shadow: 0px 3px 6px rgba(0,0,0,0.08);
+    }
+
+    /* ===== Modal Popup Styling ===== */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.4s;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 25px;
+      border-radius: 14px;
+      text-align: center;
+      width: 90%;
+      max-width: 450px;
+      box-shadow: 0px 8px 25px rgba(0,0,0,0.2);
+      animation: slideUp 0.4s;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(50px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal h2 {
+      margin-bottom: 15px;
+      color: #6A5ACD;
+    }
+
+    .modal p {
+      font-size: 18px;
+      margin: 8px 0;
+      color: #333;
+    }
+
+    .close-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #6A5ACD;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 14px;
+      color: #5D6D7E;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏆 Top Student Finder</h1>
+    <p class="description">
+      This tool finds the <b>student(s) with the highest marks</b>.<br>
+      👉 Start by adding students (we added some dummy data for you).<br>
+      Then click <b>"Find Top Student"</b> to see the winner(s) 🎉
+    </p>
+
+    <div id="students"></div>
+
+    <button class="add-btn" onclick="addStudent()">+ Add Student</button>
+    <button class="find-btn" onclick="findHighest()">Find Top Student</button>
+
+    <div id="result">Dummy student data is preloaded 👇</div>
+  </div>
+
+  <footer>✨ Created for easy use – even if you don't know coding ✨</footer>
+
+  <!-- Modal for Result -->
+  <div id="resultModal" class="modal">
+    <div class="modal-content">
+      <h2>🥇 Top Ranker(s)</h2>
+      <div id="modal-body"></div>
+      <button class="close-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <script>
+    function addStudent(name = "", mark = "") {
+      const studentDiv = document.createElement("div");
+      studentDiv.classList.add("student-box");
+
+      studentDiv.innerHTML = `
+        <label>Name:</label>
+        <input type="text" class="name" placeholder="Enter student name" value="${name}">
+        <label>Marks:</label>
+        <input type="number" class="mark" placeholder="Enter marks" value="${mark}">
+      `;
+
+      document.getElementById("students").appendChild(studentDiv);
+    }
+
+    function findHighest() {
+      const names = document.querySelectorAll(".name");
+      const marks = document.querySelectorAll(".mark");
+
+      let students = [];
+      for (let i = 0; i < names.length; i++) {
+        if (names[i].value && marks[i].value) {
+          students.push({
+            name: names[i].value,
+            mark: parseInt(marks[i].value)
+          });
+        }
+      }
+
+      if (students.length === 0) {
+        document.getElementById("result").textContent = "⚠️ Please enter at least one student's details.";
+        return;
+      }
+
+      let maxMark = Math.max(...students.map(s => s.mark));
+      let toppers = students.filter(s => s.mark === maxMark);
+
+      // Update modal body
+      let modalBody = document.getElementById("modal-body");
+      modalBody.innerHTML = "";
+
+      toppers.forEach(s => {
+        let p = document.createElement("p");
+        p.textContent = `🎉 ${s.name} with ${s.mark} marks`;
+        modalBody.appendChild(p);
+      });
+
+      // Show modal
+      document.getElementById("resultModal").style.display = "flex";
+    }
+
+    function closeModal() {
+      document.getElementById("resultModal").style.display = "none";
+    }
+
+    // Preload dummy data for easy testing
+    let dummyData = [
+      {name: "Alice", mark: 85},
+      {name: "Bob", mark: 92},
+      {name: "Charlie", mark: 92},
+      {name: "Diana", mark: 78}
+    ];
+
+    dummyData.forEach(s => addStudent(s.name, s.mark));
+  </script>
+</body>
+</html>
