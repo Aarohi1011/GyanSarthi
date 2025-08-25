@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Highest Marks</title>
+  <style>
+    /* ===== Global Styles ===== */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #FAFAFA;
+      color: #1E1E1E;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 20px;
+      box-shadow: 0px 6px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #6A5ACD; /* Highlight */
+      margin-bottom: 15px;
+    }
+
+    p {
+      color: #5D6D7E;
+      font-size: 16px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      font-size: 16px;
+      border: 2px solid #D4A373;
+      border-radius: 12px;
+      outline: none;
+      transition: 0.3s;
+    }
+
+    input:focus {
+      border-color: #6A5ACD;
+      box-shadow: 0 0 8px rgba(106,90,205,0.3);
+    }
+
+    button {
+      background: #6A5ACD;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #5a4abe;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #1E1E1E;
+      padding: 15px;
+      background: #f2f0ff;
+      border: 2px dashed #6A5ACD;
+      border-radius: 12px;
+      display: inline-block;
+      min-width: 200px;
+    }
+
+    .dummy-info {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #5D6D7E;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏆 Find Highest number</h1>
+    <p>Enter numbers separated by commas. <br>
+       Example: <b>78,92,85,67,99,88</b></p>
+
+    <!-- Pre-filled dummy data for new users -->
+    <input type="text" id="marksInput" value="78,92,85,67,99,88">
+
+    <button onclick="findHighest()">Find Highest</button>
+
+    <h2 id="result">Result will appear here</h2>
+
+    <div class="dummy-info">
+      Tip: The box is already filled with sample marks. <br>
+      Just click <b>Find Highest</b> to test the tool!
+    </div>
+  </div>
+
+  <script>
+    function findHighest() {
+      const input = document.getElementById('marksInput').value;
+      if (!input.trim()) {
+        document.getElementById('result').textContent = "⚠️ Please enter some marks!";
+        return;
+      }
+
+      const marks = input.split(',')
+                        .map(num => Number(num.trim()))
+                        .filter(num => !isNaN(num));
+
+      if (marks.length === 0) {
+        document.getElementById('result').textContent = "⚠️ Invalid input! Use numbers only.";
+        return;
+      }
+
+      const highest = Math.max(...marks);
+      document.getElementById('result').textContent = `🎉 Highest mark is: ${highest}`;
+    }
+  </script>
+</body>
+</html>
