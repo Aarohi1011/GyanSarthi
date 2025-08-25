@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JavaScript Basics - Day 1</title>
+  <style>
+    /* Simple Styling */
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #004080;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    header p {
+      margin: 5px 0 0;
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    main {
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0px 4px 6px rgba(0,0,0,0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #004080;
+      margin-bottom: 20px;
+    }
+
+    .details p {
+      font-size: 18px;
+      margin: 8px 0;
+    }
+
+    .details b {
+      color: #333;
+    }
+
+    footer {
+      text-align: center;
+      background: #004080;
+      color: white;
+      padding: 10px;
+      margin-top: 30px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Website Header -->
+  <header>
+    <h1>JavaScript Basics - Day 1</h1>
+    <p>Created with ❤️ by Team Gyan Sarthi</p>
+  </header>
+
+  <!-- Main Section -->
+  <main>
+    <h2>Student Details</h2>
+
+    <!-- Where we will display student details -->
+    <div id="output" class="details"></div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    &copy; 2025 Team Gyan Sarthi | Learning Made Simple
+  </footer>
+
+  <script>
+    /*
+      STEP 1: Define variables to hold student information
+    */
+    let name = "Aarohi";   // student's name
+    const age = 20;        // student's age (constant, doesn't change)
+    let course = "B.Tech"; // course student is enrolled in
+    let marks = 92;        // student's marks
+
+    /*
+      STEP 2: Create an object to group student details together
+      (This makes it easier to manage related data)
+    */
+    const student = {
+      name: name,
+      age: age,
+      course: course,
+      marks: marks
+    };
+
+    /*
+      STEP 3: Print student details in the console
+      (Useful for developers while checking values)
+    */
+    console.log("Student Details:");
+    console.log("Name:", student.name);
+    console.log("Age:", student.age);
+    console.log("Course:", student.course);
+    console.log("Marks:", student.marks);
+
+    /*
+      STEP 4: Show the student details on the webpage
+      (So that anyone can see the data visually)
+    */
+    const outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = `
+      <p><b>Name:</b> ${student.name}</p>
+      <p><b>Age:</b> ${student.age}</p>
+      <p><b>Course:</b> ${student.course}</p>
+      <p><b>Marks:</b> ${student.marks}</p>
+    `;
+  </script>
+</body>
+</html>
