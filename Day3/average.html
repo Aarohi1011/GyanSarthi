@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Marks Journal</title>
+  <style>
+    /* General Reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #FAFAFA; /* Off-white */
+      color: #1E1E1E; /* Almost black */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      font-size: 1.8rem;
+      color: #6A5ACD; /* Highlight */
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 1rem;
+      color: #5D6D7E; /* Slate gray */
+    }
+
+    input {
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+      outline: none;
+      transition: border 0.3s ease;
+    }
+
+    input:focus {
+      border-color: #6A5ACD; /* Slate blue */
+    }
+
+    button {
+      background-color: #D4A373; /* Muted gold-beige */
+      border: none;
+      padding: 12px 25px;
+      border-radius: 6px;
+      font-size: 1rem;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #6A5ACD; /* Slate blue */
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #1E1E1E;
+      padding: 15px;
+      border-radius: 8px;
+      background-color: #F5F5F5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📒 Student Marks Journal</h1>
+    
+    <form id="marksForm">
+      <div>
+        <label for="name">Student Name:</label>
+        <input type="text" id="name" value="Aarohi">
+      </div>
+      <div>
+        <label for="marks">Marks (comma separated):</label>
+        <input type="text" id="marks" value="78, 92, 85, 67, 99">
+      </div>
+      <button type="button" onclick="calculateMarks()">Calculate</button>
+    </form>
+
+    <h2 id="result">Enter details above and click Calculate</h2>
+  </div>
+
+  <script>
+    function calculateMarks() {
+      const name = document.getElementById('name').value.trim();
+      const marksInput = document.getElementById('marks').value.trim();
+
+      if (!name || !marksInput) {
+        document.getElementById('result').textContent = "⚠️ Please enter both name and marks!";
+        return;
+      }
+
+      // Convert marks string to array of numbers
+      const marksArray = marksInput.split(",").map(m => parseFloat(m.trim())).filter(m => !isNaN(m));
+
+      if (marksArray.length === 0) {
+        document.getElementById('result').textContent = "⚠️ Please enter valid marks!";
+        return;
+      }
+
+      const total = marksArray.reduce((sum, mark) => sum + mark, 0);
+      const average = total / marksArray.length;
+
+      document.getElementById('result').textContent = 
+        `${name} - Total Marks: ${total}, Average Marks: ${average.toFixed(2)}`;
+    }
+  </script>
+</body>
+</html>
