@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Generalised Student Form</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #FAFAFA;
+      margin: 0;
+      padding: 20px;
+      color: #1E1E1E;
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #1E1E1E;
+    }
+
+    /* Container */
+    .container {
+      max-width: 550px;
+      margin: auto;
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 16px;
+      box-shadow: 0px 6px 16px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+      color: #5D6D7E;
+    }
+
+    input[type="text"] {
+      width: 95%;
+      padding: 10px;
+      margin-top: 6px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #FAFAFA;
+    }
+
+    input[type="text"]:focus {
+      border-color: #6A5ACD;
+      outline: none;
+      box-shadow: 0px 0px 5px rgba(106,90,205,0.4);
+    }
+
+    button {
+      margin-top: 18px;
+      padding: 12px 22px;
+      border: none;
+      background: #6A5ACD;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    button:hover {
+      background: #5143b5;
+    }
+
+    hr {
+      margin: 25px 0;
+      border: 0;
+      border-top: 1px solid #eee;
+    }
+
+    /* Output */
+    #output {
+      background: #fafafa;
+      padding: 18px;
+      border-radius: 10px;
+      box-shadow: 0px 3px 8px rgba(0,0,0,0.08);
+      border-left: 5px solid #D4A373;
+    }
+
+    #output p {
+      margin: 10px 0;
+      font-size: 15px;
+    }
+
+    #output b {
+      color: #1E1E1E;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #5D6D7E;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🎓 Generalised Student Details Form</h2>
+    <p class="hint">Step 1: Fields are pre‑filled for you. Just press <b>Create Form</b>.</p>
+
+    <!-- Step 1: Enter the field names -->
+    <label>Enter Fields (comma separated):</label>
+    <input type="text" id="fields" value="Name, Age, Course, Marks">
+    <button onclick="createForm()">Create Form</button>
+
+    <hr>
+
+    <!-- Step 2: Dynamic form will appear here -->
+    <form id="studentForm"></form>
+    <button id="submitBtn" style="display:none;">Submit</button>
+
+    <hr>
+
+    <!-- Step 3: Show Output -->
+    <h3>📋 Entered Details:</h3>
+    <div id="output">Fill the form and your details will appear here.</div>
+  </div>
+
+  <script>
+    function createForm() {
+      const fieldsInput = document.getElementById("fields").value;
+      const fields = fieldsInput.split(",").map(f => f.trim()); 
+      const form = document.getElementById("studentForm");
+
+      form.innerHTML = ""; // clear previous form
+
+      // Dummy data for testing
+      const dummyData = {
+        "Name": "John Doe",
+        "Age": "20",
+        "Course": "Computer Science",
+        "Marks": "85"
+      };
+
+      // Generate input fields dynamically
+      fields.forEach(field => {
+        form.innerHTML += `
+          <label>${field}:</label>
+          <input type="text" id="${field}" value="${dummyData[field] || ''}" placeholder="Enter ${field}">
+        `;
+      });
+
+      document.getElementById("submitBtn").style.display = "block";
+    }
+
+    document.getElementById("submitBtn").addEventListener("click", function(event) {
+      event.preventDefault();
+
+      const fieldsInput = document.getElementById("fields").value;
+      const fields = fieldsInput.split(",").map(f => f.trim());
+      let student = {};
+
+      // Collect values
+      fields.forEach(field => {
+        student[field] = document.getElementById(field).value;
+      });
+
+      // Show Output
+      let outputHTML = "";
+      for (let key in student) {
+        outputHTML += `<p><b>${key}:</b> ${student[key]}</p>`;
+      }
+
+      document.getElementById("output").innerHTML = outputHTML;
+    });
+  </script>
+</body>
+</html>
