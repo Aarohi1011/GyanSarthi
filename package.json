@@ -1,0 +1,15 @@
+{
+  "name": "gyansarthi",
+  "version": "1.0.0",
+  "description": "This repository tracks my **day-by-day learning progress** as I build skills in **JavaScript, Node.js, React, and Full-Stack Development**.  \r The journey is divided into **4 Phases** with daily milestones and mini projects.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
