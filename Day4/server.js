@@ -8,7 +8,7 @@ const port = 3000;
 const server = http.createServer((req, res) => {
   res.statusCode = 200;  // success code
   res.setHeader("Content-Type", "text/plain");
-  res.end("Hello, this is my girlfriend server 🚀");
+  res.end("Hello, this is my server");
 });
 
 // Start the server
