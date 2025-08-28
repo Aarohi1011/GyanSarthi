@@ -40,31 +40,34 @@ function App() {
   return (
     <div className="app-container">
       <h1 className="app-title">Team Profiles</h1>
+      <p className="app-subtitle">Meet our talented team members</p>
       <div className="cards-container">
-        <ProfileCard 
-          name="Aarohi Saxena" 
-          age={21} 
-          bio="React learner, loves coding 🚀"
-          image="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        />
-        <ProfileCard 
-          name="Deepansh Sharma" 
-          age={25} 
-          bio="Frontend Developer & Designer 🎨"
-          image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        />
-        <ProfileCard 
-          name="Priya Patel" 
-          age={23} 
-          bio="UI/UX Designer with a passion for animation"
-          image="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        />
-        <ProfileCard 
-          name="Rahul Kumar" 
-          age={26} 
-          bio="Full-stack developer and open source contributor"
-          image="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
-        />
+        <div className="cards-wrapper">
+          <ProfileCard 
+            name="Aarohi Saxena" 
+            age={21} 
+            bio="React learner, loves coding 🚀"
+            image="https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
+          />
+          <ProfileCard 
+            name="Deepansh Sharma" 
+            age={25} 
+            bio="Frontend Developer & Designer 🎨"
+            image="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
+          />
+          <ProfileCard 
+            name="Priya Patel" 
+            age={23} 
+            bio="UI/UX Designer with a passion for animation"
+            image="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
+          />
+          <ProfileCard 
+            name="Rahul Kumar" 
+            age={26} 
+            bio="Full-stack developer and open source contributor"
+            image="https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80"
+          />
+        </div>
       </div>
     </div>
   );
