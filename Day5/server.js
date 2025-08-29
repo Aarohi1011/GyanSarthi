@@ -1,9 +1,13 @@
+// server.js
 const express = require("express");
+const cors = require("cors"); // Install with: npm install cors
+
 const app = express();
 const port = 3000;
 
-// Middleware to parse JSON body
+// Middleware to parse JSON body and enable CORS
 app.use(express.json());
+app.use(cors());
 
 let students = [
   { id: 1, name: "Aarav", age: 20 },
