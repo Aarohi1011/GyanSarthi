@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Socket.IO Tester</title>
+</head>
+<body>
+    <h1>Socket.IO Backend Tester</h1>
+    <div>
+        <input id="messageInput" type="text" placeholder="Type a message..." />
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <h2>Messages:</h2>
+    <ul id="messages"></ul>
+
+    <!-- Include the Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        // Connect to the backend server
+        const socket = io('http://localhost:5000');
+
+        const messageInput = document.getElementById('messageInput');
+        const messages = document.getElementById('messages');
+
+        // Event handler for successful connection
+        socket.on('connect', () => {
+            console.log('Connected to the server with ID:', socket.id);
+            const li = document.createElement('li');
+            li.textContent = `Connected! Your ID is ${socket.id}`;
+            li.style.color = 'green';
+            messages.appendChild(li);
+        });
+
+        // Event handler for receiving messages from the server
+        socket.on('receive_message', (data) => {
+            console.log('Message received from server:', data);
+            const li = document.createElement('li');
+            li.textContent = `${data.message}`;
+            messages.appendChild(li);
+        });
+
+        // Event handler for disconnection
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server.');
+            const li = document.createElement('li');
+            li.textContent = 'Disconnected from server.';
+            li.style.color = 'red';
+            messages.appendChild(li);
+        });
+
+        // Function to send a message to the server
+        function sendMessage() {
+            const message = messageInput.value;
+            if (message) {
+                // Emit the 'send_message' event with the message data
+                socket.emit('send_message', { message: message });
+                messageInput.value = ''; // Clear the input field
+            }
+        }
+    </script>
+</body>
+</html>
