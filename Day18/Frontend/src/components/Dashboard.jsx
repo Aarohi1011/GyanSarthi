@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import BoardCard from './BoardCard'
-import CreateBoardModal from './CreateBoardModal'
+import BoardModal from './BoardModal'
 
 const Dashboard = ({ socket }) => {
   const [boards, setBoards] = useState([])
