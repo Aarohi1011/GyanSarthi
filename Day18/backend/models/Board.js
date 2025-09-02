@@ -9,35 +9,37 @@ const boardSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    maxlength: [500, 'Description cannot exceed 500 characters']
+    maxlength: [500, 'Board description cannot exceed 500 characters']
   },
-  members: [{
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
-    role: {
-      type: String,
-      enum: ['viewer', 'editor', 'admin'],
-      default: 'editor'
-    }
-  }],
-  createdBy: {
+  owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
+  members: [{
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    role: {
+      type: String,
+      enum: ['admin', 'member'],
+      default: 'member'
+    }
+  }],
   isPublic: {
     type: Boolean,
     default: false
+  },
+  color: {
+    type: String,
+    default: '#007bff'
   }
 }, {
   timestamps: true
 });
 
 // Index for better query performance
-boardSchema.index({ createdBy: 1 });
-boardSchema.index({ 'members.user': 1 });
+boardSchema.index({ owner: 1, isPublic: 1 });
 
 export default mongoose.model('Board', boardSchema);

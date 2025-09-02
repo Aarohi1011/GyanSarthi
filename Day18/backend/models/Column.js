@@ -7,20 +7,21 @@ const columnSchema = new mongoose.Schema({
     trim: true,
     maxlength: [50, 'Column title cannot exceed 50 characters']
   },
-  board: {
+  boardId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Board',
     required: true
   },
-  order: {
+  position: {
     type: Number,
-    default: 0
+    required: true,
+    min: 0
   }
 }, {
   timestamps: true
 });
 
-// Index for better query performance
-columnSchema.index({ board: 1 });
+// Ensure each board has unique column positions
+columnSchema.index({ boardId: 1, position: 1 }, { unique: true });
 
 export default mongoose.model('Column', columnSchema);

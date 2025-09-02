@@ -1,231 +1,283 @@
 import { useState, useEffect } from 'react'
-import { useDrop } from 'react-dnd'
-import Column from './Column'
-import TaskModal from './TaskModal'
-import BoardModal from './BoardModal'
+import { useParams } from 'react-router-dom'
 import axios from 'axios'
+import Column from './Column'
+import CreateTaskModal from './CreateTaskModal'
+import CreateColumnModal from './CreateColumnModal'
 import './Board.css'
 
 const Board = ({ socket }) => {
-  const [boards, setBoards] = useState([])
-  const [selectedBoard, setSelectedBoard] = useState(null)
+  const { id } = useParams()
+  const [board, setBoard] = useState(null)
   const [columns, setColumns] = useState([])
-  const [showTaskModal, setShowTaskModal] = useState(false)
-  const [showBoardModal, setShowBoardModal] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [showCreateTask, setShowCreateTask] = useState(false)
+  const [showCreateColumn, setShowCreateColumn] = useState(false)
+  const [selectedColumn, setSelectedColumn] = useState(null)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    fetchBoards()
-  }, [])
+    fetchBoardData()
+    
+    if (socket) {
+      socket.emit('join-board', id)
+      
+      socket.on('task-created', handleTaskCreated)
+      socket.on('task-updated', handleTaskUpdated)
+      socket.on('task-deleted', handleTaskDeleted)
+      socket.on('column-created', handleColumnCreated)
+      socket.on('column-updated', handleColumnUpdated)
+    }
 
-  useEffect(() => {
-    if (selectedBoard) {
-      fetchColumns()
+    return () => {
       if (socket) {
-        socket.emit('join-board', selectedBoard._id)
+        socket.emit('leave-board', id)
+        socket.off('task-created')
+        socket.off('task-updated')
+        socket.off('task-deleted')
+        socket.off('column-created')
+        socket.off('column-updated')
       }
     }
+  }, [id, socket])
 
-    return () => {
-      if (socket && selectedBoard) {
-        socket.emit('leave-board', selectedBoard._id)
-      }
-    }
-  }, [selectedBoard, socket])
-
-  useEffect(() => {
-    if (!socket) return
-
-    const handleTaskUpdated = (data) => {
-      setColumns(prev => prev.map(col => 
-        col._id === data.column 
-          ? { ...col, tasks: col.tasks.map(t => t._id === data._id ? data : t) }
-          : col
-      ))
-    }
-
-    const handleTaskCreated = (data) => {
-      setColumns(prev => prev.map(col => 
-        col._id === data.column 
-          ? { ...col, tasks: [...col.tasks, data] }
-          : col
-      ))
-    }
-
-    const handleTaskDeleted = (data) => {
-      setColumns(prev => prev.map(col => ({
-        ...col,
-        tasks: col.tasks.filter(t => t._id !== data.id)
-      })))
-    }
-
-    socket.on('task-updated', handleTaskUpdated)
-    socket.on('task-created', handleTaskCreated)
-    socket.on('task-deleted', handleTaskDeleted)
-
-    return () => {
-      socket.off('task-updated', handleTaskUpdated)
-      socket.off('task-created', handleTaskCreated)
-      socket.off('task-deleted', handleTaskDeleted)
-    }
-  }, [socket])
-
-  const fetchBoards = async () => {
+  const fetchBoardData = async () => {
     try {
-      const response = await axios.get('/api/boards')
-      setBoards(response.data)
-      if (response.data.length > 0 && !selectedBoard) {
-        setSelectedBoard(response.data[0])
-      }
+      setError('')
+      const [boardResponse, columnsResponse] = await Promise.all([
+        axios.get(`/api/boards/${id}`),
+        axios.get(`/api/columns/board/${id}`)
+      ])
+      
+      setBoard(boardResponse.data)
+      setColumns(columnsResponse.data)
     } catch (error) {
-      console.error('Failed to fetch boards:', error)
+      console.error('Failed to fetch board data:', error)
+      setError('Failed to load board data. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const fetchColumns = async () => {
-    if (!selectedBoard) return
-    
-    try {
-      const response = await axios.get(`/api/columns/board/${selectedBoard._id}`)
-      setColumns(response.data)
-    } catch (error) {
-      console.error('Failed to fetch columns:', error)
-    }
+  const handleTaskCreated = (task) => {
+    setColumns(prev => prev.map(col => 
+      col._id === task.columnId 
+        ? { ...col, tasks: [...col.tasks, task] }
+        : col
+    ))
   }
 
-  const handleCreateBoard = async (boardData) => {
-    try {
-      const response = await axios.post('/api/boards', boardData)
-      setBoards(prev => [...prev, response.data])
-      setSelectedBoard(response.data)
-      setShowBoardModal(false)
-    } catch (error) {
-      console.error('Failed to create board:', error)
-    }
+  const handleTaskUpdated = (updatedTask) => {
+    setColumns(prev => prev.map(col => 
+      col._id === updatedTask.columnId 
+        ? { 
+            ...col, 
+            tasks: col.tasks.map(task => 
+              task._id === updatedTask._id ? updatedTask : task
+            )
+          }
+        : col
+    ))
   }
 
-  const handleCreateTask = async (taskData) => {
+  const handleTaskDeleted = (deletedTask) => {
+    setColumns(prev => prev.map(col => 
+      col._id === deletedTask.columnId 
+        ? { 
+            ...col, 
+            tasks: col.tasks.filter(task => task._id !== deletedTask._id)
+          }
+        : col
+    ))
+  }
+
+  const handleColumnCreated = (newColumn) => {
+    setColumns(prev => [...prev, newColumn])
+  }
+
+  const handleColumnUpdated = (updatedColumn) => {
+    setColumns(prev => prev.map(col => 
+      col._id === updatedColumn._id ? updatedColumn : col
+    ))
+  }
+
+  const handleOpenCreateTask = (columnId) => {
+    setSelectedColumn(columnId)
+    setShowCreateTask(true)
+  }
+
+  const handleTaskCreate = async (taskData) => {
     try {
       const response = await axios.post('/api/tasks', {
         ...taskData,
-        columnId: columns[0]?._id // Add to first column by default
+        columnId: selectedColumn,
+        boardId: id
       })
-      setShowTaskModal(false)
+      
+      if (socket) {
+        socket.emit('task-created', {
+          ...response.data,
+          boardId: id
+        })
+      }
+      
+      setShowCreateTask(false)
+      setSelectedColumn(null)
     } catch (error) {
       console.error('Failed to create task:', error)
+      setError('Failed to create task. Please try again.')
     }
   }
 
-  const moveTask = async (taskId, sourceColId, targetColId) => {
-    if (sourceColId === targetColId) return
-
+  const handleColumnCreate = async (columnData) => {
     try {
-      await axios.put(`/api/tasks/${taskId}`, {
-        columnId: targetColId
+      const response = await axios.post('/api/columns', {
+        ...columnData,
+        boardId: id
       })
+      
+      if (socket) {
+        socket.emit('column-created', {
+          ...response.data,
+          boardId: id
+        })
+      }
+      
+      setShowCreateColumn(false)
+    } catch (error) {
+      console.error('Failed to create column:', error)
+      setError('Failed to create column. Please try again.')
+    }
+  }
+
+  const handleTaskMove = async (taskId, sourceColId, destinationColId, newIndex) => {
+    try {
+      // Optimistic UI update first
+      const taskToMove = columns
+        .find(col => col._id === sourceColId)
+        ?.tasks.find(task => task._id === taskId)
+      
+      if (taskToMove) {
+        setColumns(prev => prev.map(col => {
+          if (col._id === sourceColId) {
+            return {
+              ...col,
+              tasks: col.tasks.filter(task => task._id !== taskId)
+            }
+          }
+          if (col._id === destinationColId) {
+            const newTasks = [...col.tasks]
+            newTasks.splice(newIndex, 0, { ...taskToMove, columnId: destinationColId })
+            return { ...col, tasks: newTasks }
+          }
+          return col
+        }))
+        
+        // Then make the API call
+        await axios.put(`/api/tasks/${taskId}/move`, {
+          columnId: destinationColId,
+          position: newIndex
+        })
+        
+        if (socket) {
+          socket.emit('task-updated', {
+            ...taskToMove,
+            columnId: destinationColId,
+            boardId: id
+          })
+        }
+      }
     } catch (error) {
       console.error('Failed to move task:', error)
-      // Revert UI on error
-      fetchColumns()
+      setError('Failed to move task. Please try again.')
+      fetchBoardData() // Revert to server state if move fails
     }
   }
 
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'task',
-    drop: (item) => moveTask(item.id, item.columnId, columns[columns.length - 1]?._id),
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver()
-    })
-  }), [columns])
-
   if (loading) {
-    return <div className="loading">Loading boards...</div>
+    return (
+      <div className="container">
+        <div className="loading">Loading board...</div>
+      </div>
+    )
   }
 
-  if (boards.length === 0) {
+  if (!board) {
     return (
-      <div className="board-container">
-        <div className="empty-state">
-          <h2>No boards yet</h2>
-          <p>Create your first board to get started</p>
-          <button 
-            className="btn btn-primary"
-            onClick={() => setShowBoardModal(true)}
-          >
-            Create Board
-          </button>
-        </div>
-
-        {showBoardModal && (
-          <BoardModal
-            onClose={() => setShowBoardModal(false)}
-            onSubmit={handleCreateBoard}
-          />
-        )}
+      <div className="container">
+        <div className="error-message">Board not found</div>
       </div>
     )
   }
 
   return (
-    <div className="board-container">
-      <div className="board-header">
-        <div className="board-selector">
-          <select 
-            value={selectedBoard?._id} 
-            onChange={(e) => setSelectedBoard(boards.find(b => b._id === e.target.value))}
-          >
-            {boards.map(board => (
-              <option key={board._id} value={board._id}>
-                {board.title}
-              </option>
-            ))}
-          </select>
-          <button 
-            className="btn btn-secondary"
-            onClick={() => setShowBoardModal(true)}
-          >
-            New Board
-          </button>
+    <div className="container">
+      <div className="flex-between mb-4">
+        <div>
+          <h1>{board.title}</h1>
+          {board.description && <p className="board-description">{board.description}</p>}
         </div>
-        
         <button 
           className="btn btn-primary"
-          onClick={() => setShowTaskModal(true)}
+          onClick={() => setShowCreateColumn(true)}
         >
-          Add Task
+          Add Column
         </button>
       </div>
 
-      <div className="columns-container" ref={drop}>
+      {error && (
+        <div className="error-message mb-3">
+          {error}
+          <button 
+            className="btn btn-secondary ml-2"
+            onClick={() => setError('')}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      <div className="board-columns">
         {columns.map(column => (
           <Column
             key={column._id}
             column={column}
-            onMoveTask={moveTask}
+            onAddTask={() => handleOpenCreateTask(column._id)}
+            onTaskMove={handleTaskMove}
+            socket={socket}
+            boardId={id}
           />
         ))}
         
         {columns.length === 0 && (
-          <div className="empty-columns">
-            <p>No columns yet. Tasks will appear here.</p>
+          <div className="card text-center p-4">
+            <h3>No columns yet</h3>
+            <p>Create your first column to get started!</p>
+            <button 
+              className="btn btn-primary mt-2"
+              onClick={() => setShowCreateColumn(true)}
+            >
+              Create Column
+            </button>
           </div>
         )}
       </div>
 
-      {showTaskModal && (
-        <TaskModal
-          onClose={() => setShowTaskModal(false)}
-          onSubmit={handleCreateTask}
-          board={selectedBoard}
+      {showCreateTask && (
+        <CreateTaskModal
+          onClose={() => {
+            setShowCreateTask(false)
+            setSelectedColumn(null)
+          }}
+          onSubmit={handleTaskCreate}
+          columnId={selectedColumn}
         />
       )}
 
-      {showBoardModal && (
-        <BoardModal
-          onClose={() => setShowBoardModal(false)}
-          onSubmit={handleCreateBoard}
+      {showCreateColumn && (
+        <CreateColumnModal
+          onClose={() => setShowCreateColumn(false)}
+          onSubmit={handleColumnCreate}
         />
       )}
     </div>

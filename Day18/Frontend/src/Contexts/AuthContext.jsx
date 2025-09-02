@@ -3,11 +3,11 @@ import axios from 'axios'
 
 const AuthContext = createContext()
 
-export function useAuth() {
+export const useAuth = () => {
   return useContext(AuthContext)
 }
 
-export function AuthProvider({ children }) {
+export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
 
   const fetchUser = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/me`)
+      const response = await axios.get('/api/auth/me')
       setUser(response.data)
     } catch (error) {
       console.error('Failed to fetch user:', error)
@@ -35,15 +35,13 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`, {
-        email,
-        password
-      })
-      
+      const response = await axios.post('/api/auth/login', { email, password })
       const { token, ...userData } = response.data
+      
       localStorage.setItem('token', token)
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       setUser(userData)
+      
       return { success: true }
     } catch (error) {
       return { 
@@ -53,18 +51,15 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const register = async (username, email, password) => {
+  const register = async (userData) => {
     try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/register`, {
-        username,
-        email,
-        password
-      })
+      const response = await axios.post('/api/auth/register', userData)
+      const { token, ...newUser } = response.data
       
-      const { token, ...userData } = response.data
       localStorage.setItem('token', token)
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      setUser(userData)
+      setUser(newUser)
+      
       return { success: true }
     } catch (error) {
       return { 
@@ -90,7 +85,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   )
 }

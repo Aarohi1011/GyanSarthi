@@ -1,17 +1,32 @@
 import express from 'express';
+import { body, validationResult } from 'express-validator';
 import Task from '../models/Task.js';
 import Column from '../models/Column.js';
 import Board from '../models/Board.js';
 
 const router = express.Router();
 
-// Get all tasks for a column
-router.get('/column/:columnId', async (req, res) => {
+// Get all tasks for a board
+router.get('/board/:boardId', async (req, res) => {
   try {
-    const tasks = await Task.find({ column: req.params.columnId })
-      .populate('assignees', 'username email avatar')
-      .populate('createdBy', 'username email avatar')
-      .populate('comments.user', 'username email avatar');
+    // Check if user has access to the board
+    const board = await Board.findOne({
+      _id: req.params.boardId,
+      $or: [
+        { owner: req.user.id },
+        { 'members.user': req.user.id },
+        { isPublic: true }
+      ]
+    });
+
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found or access denied' });
+    }
+
+    const tasks = await Task.find({ boardId: req.params.boardId })
+      .sort('position')
+      .populate('assignees', 'username email')
+      .populate('comments.user', 'username email');
 
     res.json(tasks);
   } catch (error) {
@@ -20,50 +35,72 @@ router.get('/column/:columnId', async (req, res) => {
   }
 });
 
-// Get single task
-router.get('/:id', async (req, res) => {
+// Create task
+router.post('/', [
+  body('title')
+    .notEmpty()
+    .withMessage('Task title is required')
+    .isLength({ max: 200 })
+    .withMessage('Task title cannot exceed 200 characters'),
+  body('columnId')
+    .notEmpty()
+    .withMessage('Column ID is required'),
+  body('boardId')
+    .notEmpty()
+    .withMessage('Board ID is required')
+], async (req, res) => {
   try {
-    const task = await Task.findById(req.params.id)
-      .populate('assignees', 'username email avatar')
-      .populate('createdBy', 'username email avatar')
-      .populate('comments.user', 'username email avatar');
-
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: errors.array() 
+      });
     }
 
-    res.json(task);
-  } catch (error) {
-    console.error('Get task error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+    // Check if user has access to the board
+    const board = await Board.findOne({
+      _id: req.body.boardId,
+      $or: [
+        { owner: req.user.id },
+        { 'members.user': req.user.id }
+      ]
+    });
 
-// Create new task
-router.post('/', async (req, res) => {
-  try {
-    const { title, description, columnId, assignees, dueDate, priority, labels } = req.body;
+    if (!board) {
+      return res.status(404).json({ message: 'Board not found or access denied' });
+    }
+
+    // Verify column exists and belongs to the board
+    const column = await Column.findOne({
+      _id: req.body.columnId,
+      boardId: req.body.boardId
+    });
+
+    if (!column) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    // Get the highest position to place new task at the end
+    const lastTask = await Task.findOne({ columnId: req.body.columnId })
+      .sort('-position')
+      .select('position');
+
+    const position = lastTask ? lastTask.position + 1 : 0;
 
     const task = await Task.create({
-      title,
-      description,
-      column: columnId,
-      assignees: assignees || [],
-      dueDate,
-      priority: priority || 'medium',
-      labels: labels || [],
-      createdBy: req.user._id
+      ...req.body,
+      position
     });
 
     const populatedTask = await Task.findById(task._id)
-      .populate('assignees', 'username email avatar')
-      .populate('createdBy', 'username email avatar');
+      .populate('assignees', 'username email')
+      .populate('comments.user', 'username email');
 
-    // Get board ID for socket emission
-    const column = await Column.findById(columnId);
-    
     // Emit socket event
-    req.io.to(column.board.toString()).emit('task-created', populatedTask);
+    if (req.io) {
+      req.io.to(req.body.boardId).emit('task-created', populatedTask);
+    }
 
     res.status(201).json(populatedTask);
   } catch (error) {
@@ -75,26 +112,35 @@ router.post('/', async (req, res) => {
 // Update task
 router.put('/:id', async (req, res) => {
   try {
-    const { title, description, columnId, assignees, dueDate, priority, labels } = req.body;
-
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    // Check if user has access to the board
+    const board = await Board.findOne({
+      _id: task.boardId,
+      $or: [
+        { owner: req.user.id },
+        { 'members.user': req.user.id }
+      ]
+    });
+
+    if (!board) {
+      return res.status(404).json({ message: 'Access denied' });
+    }
+
     const updatedTask = await Task.findByIdAndUpdate(
       req.params.id,
-      { title, description, column: columnId, assignees, dueDate, priority, labels },
+      req.body,
       { new: true, runValidators: true }
-    ).populate('assignees', 'username email avatar')
-     .populate('createdBy', 'username email avatar')
-     .populate('comments.user', 'username email avatar');
+    ).populate('assignees', 'username email')
+     .populate('comments.user', 'username email');
 
-    // Get board ID for socket emission
-    const column = await Column.findById(columnId || task.column);
-    
     // Emit socket event
-    req.io.to(column.board.toString()).emit('task-updated', updatedTask);
+    if (req.io) {
+      req.io.to(task.boardId.toString()).emit('task-updated', updatedTask);
+    }
 
     res.json(updatedTask);
   } catch (error) {
@@ -111,13 +157,25 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    // Check if user has access to the board
+    const board = await Board.findOne({
+      _id: task.boardId,
+      $or: [
+        { owner: req.user.id },
+        { 'members.user': req.user.id }
+      ]
+    });
+
+    if (!board) {
+      return res.status(404).json({ message: 'Access denied' });
+    }
+
     await Task.findByIdAndDelete(req.params.id);
 
-    // Get board ID for socket emission
-    const column = await Column.findById(task.column);
-    
     // Emit socket event
-    req.io.to(column.board.toString()).emit('task-deleted', { id: req.params.id });
+    if (req.io) {
+      req.io.to(task.boardId.toString()).emit('task-deleted', task);
+    }
 
     res.json({ message: 'Task deleted successfully' });
   } catch (error) {
@@ -126,77 +184,127 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Add comment to task
-router.post('/:id/comments', async (req, res) => {
+// Move task to different column or position
+router.put('/:id/move', [
+  body('columnId')
+    .notEmpty()
+    .withMessage('Column ID is required'),
+  body('position')
+    .isInt({ min: 0 })
+    .withMessage('Position must be a non-negative integer')
+], async (req, res) => {
   try {
-    const { text } = req.body;
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: errors.array() 
+      });
+    }
 
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    task.comments.push({
-      user: req.user._id,
-      text
+    // Check if user has access to the board
+    const board = await Board.findOne({
+      _id: task.boardId,
+      $or: [
+        { owner: req.user.id },
+        { 'members.user': req.user.id }
+      ]
     });
 
+    if (!board) {
+      return res.status(404).json({ message: 'Access denied' });
+    }
+
+    // Verify new column exists and belongs to the same board
+    const newColumn = await Column.findOne({
+      _id: req.body.columnId,
+      boardId: task.boardId
+    });
+
+    if (!newColumn) {
+      return res.status(404).json({ message: 'Column not found' });
+    }
+
+    // Update task position and column
+    task.columnId = req.body.columnId;
+    task.position = req.body.position;
     await task.save();
 
-    const populatedTask = await Task.findById(req.params.id)
-      .populate('assignees', 'username email avatar')
-      .populate('createdBy', 'username email avatar')
-      .populate('comments.user', 'username email avatar');
+    const populatedTask = await Task.findById(task._id)
+      .populate('assignees', 'username email')
+      .populate('comments.user', 'username email');
 
-    // Get board ID for socket emission
-    const column = await Column.findById(task.column);
-    
     // Emit socket event
-    req.io.to(column.board.toString()).emit('task-updated', populatedTask);
+    if (req.io) {
+      req.io.to(task.boardId.toString()).emit('task-updated', populatedTask);
+    }
 
     res.json(populatedTask);
   } catch (error) {
-    console.error('Add comment error:', error);
+    console.error('Move task error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Delete comment from task
-router.delete('/:id/comments/:commentId', async (req, res) => {
+// Add comment to task
+router.post('/:id/comments', [
+  body('content')
+    .notEmpty()
+    .withMessage('Comment content is required')
+    .isLength({ max: 500 })
+    .withMessage('Comment cannot exceed 500 characters')
+], async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ 
+        message: 'Validation failed', 
+        errors: errors.array() 
+      });
+    }
+
     const task = await Task.findById(req.params.id);
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    const comment = task.comments.id(req.params.commentId);
-    if (!comment) {
-      return res.status(404).json({ message: 'Comment not found' });
+    // Check if user has access to the board
+    const board = await Board.findOne({
+      _id: task.boardId,
+      $or: [
+        { owner: req.user.id },
+        { 'members.user': req.user.id }
+      ]
+    });
+
+    if (!board) {
+      return res.status(404).json({ message: 'Access denied' });
     }
 
-    // Check if user is the comment author or task creator
-    if (comment.user.toString() !== req.user._id.toString() && 
-        task.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
+    task.comments.push({
+      user: req.user.id,
+      content: req.body.content
+    });
 
-    comment.deleteOne();
     await task.save();
 
-    const populatedTask = await Task.findById(req.params.id)
-      .populate('assignees', 'username email avatar')
-      .populate('createdBy', 'username email avatar')
-      .populate('comments.user', 'username email avatar');
+    const populatedTask = await Task.findById(task._id)
+      .populate('assignees', 'username email')
+      .populate('comments.user', 'username email');
 
-    // Get board ID for socket emission
-    const column = await Column.findById(task.column);
-    
     // Emit socket event
-    req.io.to(column.board.toString()).emit('task-updated', populatedTask);
+    if (req.io) {
+      req.io.to(task.boardId.toString()).emit('task-updated', populatedTask);
+    }
 
     res.json(populatedTask);
   } catch (error) {
-    console.error('Delete comment error:', error);
+    console.error('Add comment error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

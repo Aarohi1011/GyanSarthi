@@ -5,32 +5,42 @@ const taskSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Task title is required'],
     trim: true,
-    maxlength: [100, 'Task title cannot exceed 100 characters']
+    maxlength: [200, 'Task title cannot exceed 200 characters']
   },
   description: {
     type: String,
-    maxlength: [1000, 'Description cannot exceed 1000 characters']
+    maxlength: [1000, 'Task description cannot exceed 1000 characters']
   },
-  column: {
+  columnId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Column',
     required: true
   },
-  assignees: [{
+  boardId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  dueDate: {
-    type: Date
+    ref: 'Board',
+    required: true
+  },
+  position: {
+    type: Number,
+    required: true,
+    min: 0
   },
   priority: {
     type: String,
     enum: ['low', 'medium', 'high'],
     default: 'medium'
   },
+  dueDate: {
+    type: Date
+  },
   labels: [{
     type: String,
     trim: true
+  }],
+  assignees: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }],
   attachments: [{
     filename: String,
@@ -46,28 +56,22 @@ const taskSchema = new mongoose.Schema({
       ref: 'User',
       required: true
     },
-    text: {
+    content: {
       type: String,
       required: true,
-      maxlength: 500
+      maxlength: [500, 'Comment cannot exceed 500 characters']
     },
     createdAt: {
       type: Date,
       default: Date.now
     }
-  }],
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  }
+  }]
 }, {
   timestamps: true
 });
 
 // Index for better query performance
-taskSchema.index({ column: 1 });
-taskSchema.index({ assignees: 1 });
-taskSchema.index({ createdBy: 1 });
+taskSchema.index({ columnId: 1, position: 1 });
+taskSchema.index({ boardId: 1 });
 
 export default mongoose.model('Task', taskSchema);

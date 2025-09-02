@@ -1,45 +1,70 @@
-import { useDrop } from 'react-dnd'
+import { useState } from 'react'
+import axios from 'axios'
 import Task from './Task'
 import './Column.css'
 
-const Column = ({ column, onMoveTask }) => {
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: 'task',
-    drop: (item) => {
-      if (item.columnId !== column._id) {
-        onMoveTask(item.id, item.columnId, column._id)
+const Column = ({ column, onAddTask, onTaskMove, socket, boardId }) => {
+  const [isEditing, setIsEditing] = useState(false)
+  const [title, setTitle] = useState(column.title)
+
+  const handleTitleChange = async (e) => {
+    if (e.key === 'Enter') {
+      try {
+        const response = await axios.put(`/api/columns/${column._id}`, {
+          title: e.target.value
+        })
+        
+        if (socket) {
+          socket.emit('column-updated', {
+            ...response.data,
+            boardId
+          })
+        }
+        
+        setIsEditing(false)
+      } catch (error) {
+        console.error('Failed to update column title:', error)
       }
-    },
-    collect: (monitor) => ({
-      isOver: !!monitor.isOver()
-    })
-  }), [column._id])
+    } else if (e.key === 'Escape') {
+      setTitle(column.title)
+      setIsEditing(false)
+    }
+  }
 
   return (
-    <div 
-      ref={drop}
-      className={`column ${isOver ? 'column-over' : ''}`}
-    >
+    <div className="column-card">
       <div className="column-header">
-        <h3>{column.title}</h3>
+        {isEditing ? (
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={handleTitleChange}
+            onBlur={() => setIsEditing(false)}
+            autoFocus
+          />
+        ) : (
+          <h3 onClick={() => setIsEditing(true)}>{column.title}</h3>
+        )}
         <span className="task-count">{column.tasks?.length || 0}</span>
       </div>
-      
-      <div className="tasks-list">
-        {column.tasks?.map(task => (
+
+      <div className="task-list">
+        {column.tasks?.map((task, index) => (
           <Task
             key={task._id}
             task={task}
-            columnId={column._id}
+            index={index}
+            onMoveTask={onTaskMove}
+            socket={socket}
+            boardId={boardId}
           />
         ))}
-        
-        {(!column.tasks || column.tasks.length === 0) && (
-          <div className="empty-tasks">
-            <p>No tasks</p>
-          </div>
-        )}
       </div>
+
+      <button className="add-task-btn" onClick={onAddTask}>
+        + Add Task
+      </button>
     </div>
   )
 }

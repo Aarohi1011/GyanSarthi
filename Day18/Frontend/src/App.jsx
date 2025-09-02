@@ -1,101 +1,61 @@
 import { useState, useEffect } from 'react'
-import { DndProvider } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import Header from './components/Header'
 import Login from './components/Login'
 import Register from './components/Register'
+import Dashboard from './components/Dashboard'
 import Board from './components/Board'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './Contexts/AuthContext'
 import './App.css'
 
-function AppContent() {
-  const { user, loading } = useAuth()
-  const [showLogin, setShowLogin] = useState(false)
-  const [showRegister, setShowRegister] = useState(false)
+function App() {
+  const [darkMode, setDarkMode] = useState(false)
   const [socket, setSocket] = useState(null)
 
   useEffect(() => {
-    if (user) {
-      const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
-        auth: {
-          token: localStorage.getItem('token')
-        }
-      })
-      setSocket(newSocket)
+    const newSocket = io('http://localhost:5000')
+    setSocket(newSocket)
 
-      return () => newSocket.close()
-    }
-  }, [user])
+    return () => newSocket.close()
+  }, [])
 
-  if (loading) {
-    return <div className="loading">Loading...</div>
-  }
-
-  if (!user) {
-    return (
-      <div className="app">
-        <Header />
-        <div className="auth-container">
-          <div className="auth-hero">
-            <h1>TaskFlow</h1>
-            <p>Organize your work and collaborate with your team</p>
-            <div className="auth-buttons">
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowLogin(true)}
-              >
-                Login
-              </button>
-              <button 
-                className="btn btn-secondary"
-                onClick={() => setShowRegister(true)}
-              >
-                Register
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {showLogin && (
-          <Login 
-            onClose={() => setShowLogin(false)}
-            onSwitchToRegister={() => {
-              setShowLogin(false)
-              setShowRegister(true)
-            }}
-          />
-        )}
-
-        {showRegister && (
-          <Register 
-            onClose={() => setShowRegister(false)}
-            onSwitchToLogin={() => {
-              setShowRegister(false)
-              setShowLogin(true)
-            }}
-          />
-        )}
-      </div>
-    )
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode)
+    document.body.classList.toggle('dark-mode')
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="app">
-        <Header />
-        <Board socket={socket} />
-      </div>
-    </DndProvider>
+    <div className={`App ${darkMode ? 'dark-mode' : ''}`}>
+      <AuthProvider>
+        <Router>
+          <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+          <main className="main-content">
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <Dashboard socket={socket} />
+                </ProtectedRoute>
+              } />
+              <Route path="/board/:id" element={
+                <ProtectedRoute>
+                  <Board socket={socket} />
+                </ProtectedRoute>
+              } />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </main>
+        </Router>
+      </AuthProvider>
+    </div>
   )
 }
 
-function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  )
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth()
+  return user ? children : <Navigate to="/login" replace />
 }
 
 export default App
