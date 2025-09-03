@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
 import axios from 'axios'
 import BoardCard from './BoardCard'
 import CreateBoardModal from './CreateBoardModal'
@@ -24,9 +23,15 @@ const Dashboard = ({ socket }) => {
     }
   }
 
-  const handleBoardCreated = (newBoard) => {
-    setBoards([...boards, newBoard])
-    setShowCreateModal(false)
+  const handleBoardCreated = async (boardData) => {
+    try {
+      const response = await axios.post('/api/boards', boardData)
+      setBoards([...boards, response.data])
+      setShowCreateModal(false)
+    } catch (error) {
+      console.error('Failed to create board:', error)
+      throw error // This will be caught by the modal's error handling
+    }
   }
 
   if (loading) {
@@ -71,7 +76,7 @@ const Dashboard = ({ socket }) => {
       {showCreateModal && (
         <CreateBoardModal 
           onClose={() => setShowCreateModal(false)}
-          onBoardCreated={handleBoardCreated}
+          onSubmit={handleBoardCreated}
         />
       )}
     </div>
