@@ -4,6 +4,7 @@ import axios from 'axios'
 import Column from './Column'
 import CreateTaskModal from './CreateTaskModal'
 import CreateColumnModal from './CreateColumnModal'
+import CreateBoardModal from './CreateBoardModal'
 import './Board.css'
 
 const Board = ({ socket }) => {

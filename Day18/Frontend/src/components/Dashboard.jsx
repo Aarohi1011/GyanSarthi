@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axios from 'axios'
 import BoardCard from './BoardCard'
-import BoardModal from './BoardModal'
+import CreateBoardModal from './CreateBoardModal'
 
 const Dashboard = ({ socket }) => {
   const [boards, setBoards] = useState([])
@@ -56,7 +56,7 @@ const Dashboard = ({ socket }) => {
           <button 
             className="btn btn-primary mt-2"
             onClick={() => setShowCreateModal(true)}
-        >
+          >
             Create Board
           </button>
         </div>
