@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 
-// Dynamically import the MapContainer to avoid SSR issues
+// Dynamically import Leaflet components (avoid SSR issues)
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
   { ssr: false }
@@ -21,18 +21,29 @@ const Popup = dynamic(
   { ssr: false }
 )
 
-export default function Map({ location, weatherData }) {
+export default function Map({ location, weatherData, unit }) {
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
     setIsClient(true)
   }, [])
 
-  if (!isClient || !location) return (
-    <div className="h-96 rounded-xl overflow-hidden shadow-lg bg-gray-200 flex items-center justify-center">
-      <p className="text-gray-600">Loading map...</p>
-    </div>
-  )
+  if (!isClient || !location) {
+    return (
+      <div className="h-96 rounded-xl overflow-hidden shadow-lg bg-gray-200 flex items-center justify-center">
+        <p className="text-gray-600">Loading map...</p>
+      </div>
+    )
+  }
+
+  // ✅ Handle Open-Meteo structure
+  let currentTemp = null
+  let description = null
+
+  if (weatherData?.hourly) {
+    currentTemp = Math.round(weatherData.hourly.temperature_2m[0])
+    description = `Wind ${Math.round(weatherData.hourly.wind_speed_10m[0])} ${unit === 'metric' ? 'm/s' : 'mph'}`
+  }
 
   return (
     <div className="h-96 rounded-xl overflow-hidden shadow-lg">
@@ -51,12 +62,14 @@ export default function Map({ location, weatherData }) {
             <div className="text-center">
               <strong>{location.name || 'Location'}</strong>
               <br />
-              {weatherData && (
+              {currentTemp !== null ? (
                 <>
-                  {Math.round(weatherData.main.temp)}°{weatherData.unit === 'metric' ? 'C' : 'F'}
+                  {currentTemp}°{unit === 'metric' ? 'C' : 'F'}
                   <br />
-                  {weatherData.weather[0].description}
+                  {description}
                 </>
+              ) : (
+                <span>No weather data available</span>
               )}
             </div>
           </Popup>

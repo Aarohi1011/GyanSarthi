@@ -15,15 +15,18 @@ export default function Home() {
   const [unit, setUnit] = useState('metric')
 
   useEffect(() => {
+    // Fetch user's current location on initial load
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        async (position) => {
           const { latitude, longitude } = position.coords
-          setLocation(prev => ({ ...prev, lat: latitude, lng: longitude }))
+          const name = await reverseGeocode(latitude, longitude)
+          setLocation({ lat: latitude, lng: longitude, name })
           fetchWeatherData(latitude, longitude)
           fetchForecastData(latitude, longitude)
         },
         () => {
+          // fallback if geolocation fails
           fetchWeatherData(location.lat, location.lng)
           fetchForecastData(location.lat, location.lng)
         }
@@ -34,19 +37,30 @@ export default function Home() {
     }
   }, [])
 
+  // Reverse geocode coordinates to get city name
+  const reverseGeocode = async (lat, lng) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+      )
+      const data = await res.json()
+      return data.address.city || data.address.town || data.address.village || 'Unknown Location'
+    } catch (err) {
+      console.error('Reverse geocode error:', err)
+      return 'Unknown Location'
+    }
+  }
+
   const fetchWeatherData = async (lat, lng) => {
     try {
       setLoading(true)
       const response = await fetch(`/api/weather?lat=${lat}&lon=${lng}&units=${unit}`)
       const data = await response.json()
-      
-      if (data.cod !== 200) {
-        throw new Error(data.message || 'Failed to fetch weather data')
-      }
-      
+      if (!data || !data.hourly) throw new Error('Invalid weather data received')
       setWeatherData(data)
       setError(null)
     } catch (err) {
+      console.error('Weather fetch error:', err)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -57,20 +71,31 @@ export default function Home() {
     try {
       const response = await fetch(`/api/forecast?lat=${lat}&lon=${lng}&units=${unit}`)
       const data = await response.json()
-      
-      if (data.cod !== '200') {
-        throw new Error(data.message || 'Failed to fetch forecast data')
-      }
-      
+      if (!data || !data.hourly) throw new Error('Invalid forecast data received')
       setForecastData(data)
     } catch (err) {
-      console.error('Error fetching forecast:', err)
+      console.error('Forecast fetch error:', err)
     }
   }
 
-  const handleSearch = (searchLocation) => {
+  // Handle search from SearchBar
+  const handleSearch = async (searchLocation) => {
+    console.log('I am running buddy');
+    
     if (searchLocation.lat && searchLocation.lng) {
-      setLocation(searchLocation)
+      let cityName = searchLocation.name
+      console.log(cityName,searchLocation.name);
+      
+      // Optional: reverse geocode if name not provided
+      if (!cityName) cityName = await reverseGeocode(searchLocation.lat, searchLocation.lng)
+
+      const newLocation = { lat: searchLocation.lat, lng: searchLocation.lng, name: cityName }
+      setLocation(newLocation)
+      setWeatherData(null)
+      setForecastData(null)
+      setError(null)
+      setLoading(true)
+
       fetchWeatherData(searchLocation.lat, searchLocation.lng)
       fetchForecastData(searchLocation.lat, searchLocation.lng)
     }
@@ -121,10 +146,7 @@ export default function Home() {
               <WeatherCard weatherData={weatherData} unit={unit} location={location} />
               <Map location={location} weatherData={weatherData} />
             </div>
-            
-            {forecastData && (
-              <Forecast forecastData={forecastData} unit={unit} />
-            )}
+            {forecastData && <Forecast forecastData={forecastData} unit={unit} />}
           </>
         ) : null}
       </main>

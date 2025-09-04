@@ -7,6 +7,7 @@ export default function SearchBar({ onSearch }) {
   const [suggestions, setSuggestions] = useState([])
   const [loading, setLoading] = useState(false)
 
+  // Fetch city suggestions from OpenWeatherMap geocoding API
   const handleInputChange = async (e) => {
     const value = e.target.value
     setQuery(value)
@@ -18,9 +19,10 @@ export default function SearchBar({ onSearch }) {
           `https://api.openweathermap.org/geo/1.0/direct?q=${value}&limit=5&appid=${process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY}`
         )
         const data = await response.json()
-        setSuggestions(data)
+        setSuggestions(data || [])
       } catch (error) {
         console.error('Error fetching suggestions:', error)
+        setSuggestions([])
       } finally {
         setLoading(false)
       }
@@ -29,8 +31,9 @@ export default function SearchBar({ onSearch }) {
     }
   }
 
+  // When a user clicks a suggestion
   const handleSuggestionClick = (suggestion) => {
-    setQuery(suggestion.name + ', ' + suggestion.country)
+    setQuery(`${suggestion.name}${suggestion.state ? ', ' + suggestion.state : ''}, ${suggestion.country}`)
     setSuggestions([])
     onSearch({
       lat: suggestion.lat,
@@ -39,6 +42,7 @@ export default function SearchBar({ onSearch }) {
     })
   }
 
+  // Submit first suggestion if user presses Enter
   const handleSubmit = (e) => {
     e.preventDefault()
     if (suggestions.length > 0) {
@@ -64,6 +68,7 @@ export default function SearchBar({ onSearch }) {
         </button>
       </form>
 
+      {/* Suggestions dropdown */}
       {suggestions.length > 0 && (
         <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 shadow-lg">
           {suggestions.map((suggestion, index) => (
@@ -82,6 +87,7 @@ export default function SearchBar({ onSearch }) {
         </div>
       )}
 
+      {/* Loading indicator */}
       {loading && (
         <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg mt-1 p-4">
           <div className="flex items-center justify-center">
