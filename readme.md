@@ -6,6 +6,8 @@ This repository tracks my **day-by-day learning progress** as I build skills in 
 
 🎥 **Watch the Youtube video here:** [📽️Open Video](https://youtu.be/QXSV_zFiP-s?si=R2t7Bq_TYW33RIQU)
 
+ **PPT Gyan Sarthi** [Open PPT](https://github.com/Aarohi1011/GyanSarthi/blob/main/samadhan2.0%20Gyan%20Sarthi.pptx)
+
 ---
 
 ## 🚀 Phase 1: JavaScript & Node.js Fundamentals
